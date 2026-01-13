@@ -1,8 +1,8 @@
 import {
   collection,
   getDocs,
-  // doc,
-  // getDoc,
+  doc,
+  getDoc,
   addDoc,
   query,
   where,
@@ -11,21 +11,37 @@ import {
 import { db } from "./firebase";
 import { Blog } from "./pages/blogs/types";
 
-function formatFirestoreDate(value: unknown): string | undefined {
+function formatFirestoreDate(value: unknown): {
+  formatted: string | undefined;
+  timestamp: number | undefined;
+} {
   // Firestore Timestamp has a toDate() method. Some data may already be a string.
   if (value && typeof value === "object" && "toDate" in value) {
     const maybeTs = value as { toDate: () => Date };
     const d = maybeTs.toDate();
     if (d instanceof Date && !Number.isNaN(d.getTime())) {
-      return d.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
+      return {
+        formatted: d.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }),
+        timestamp: d.getTime(),
+      };
     }
   }
-  if (typeof value === "string") return value;
-  return undefined;
+  if (typeof value === "string") {
+    // Try to parse the string as a date
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+      return {
+        formatted: value,
+        timestamp: parsed.getTime(),
+      };
+    }
+    return { formatted: value, timestamp: undefined };
+  }
+  return { formatted: undefined, timestamp: undefined };
 }
 
 interface Quote {
@@ -85,6 +101,20 @@ function toBlog(docId: string, data: Record<string, unknown>): Blog {
     ? (rest.tags.filter((t) => typeof t === "string") as string[])
     : undefined;
 
+  // Parse view_count and clap_count
+  const view_count =
+    typeof rest.view_count === "number"
+      ? rest.view_count
+      : typeof rest.view_count === "string"
+      ? parseInt(rest.view_count, 10) || 0
+      : undefined;
+  const clap_count =
+    typeof rest.clap_count === "number"
+      ? rest.clap_count
+      : typeof rest.clap_count === "string"
+      ? parseInt(rest.clap_count, 10) || 0
+      : undefined;
+
   // Prefer explicit `slug` field, otherwise keep legacy `id` field as slug.
   const resolvedSlug =
     typeof slug === "string"
@@ -93,18 +123,74 @@ function toBlog(docId: string, data: Record<string, unknown>): Blog {
       ? legacyId
       : undefined;
 
+  const { formatted: createdAtFormatted, timestamp: createdAtTimestamp } =
+    formatFirestoreDate(createdAt);
+
   return {
     id: docId,
     slug: resolvedSlug,
-    createdAt: formatFirestoreDate(createdAt),
+    createdAt: createdAtFormatted,
+    createdAtTimestamp,
     content,
     title,
     image_url,
     author,
     short_description,
     tags,
+    view_count,
+    clap_count,
   };
 }
+
+export interface NewsletterSubscription {
+  email: string;
+  name?: string;
+  tags?: string[];
+}
+
+export const NewsletterService = {
+  async subscribe(
+    subscription: NewsletterSubscription
+  ): Promise<{ success: boolean; id: string; message: string }> {
+    try {
+      const response = await fetch(`/api/newsletters`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: subscription.email,
+          name: subscription.name,
+          tags: subscription.tags || [],
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage =
+          errorData.message ||
+          `HTTP ${response.status}: ${response.statusText}`;
+        console.error(
+          "Newsletter subscription error:",
+          errorMessage,
+          errorData
+        );
+        throw new Error(errorMessage);
+      }
+
+      return response.json();
+    } catch (error) {
+      // If it's a network error (like connection refused), provide a helpful message
+      if (error instanceof TypeError && error.message.includes("fetch")) {
+        console.error("Network error - is the backend server running?", error);
+        throw new Error(
+          "Unable to connect to server. Please make sure the backend server is running."
+        );
+      }
+      throw error;
+    }
+  },
+};
 
 export const BlogService = {
   async getBlogs(): Promise<Blog[]> {
@@ -133,12 +219,13 @@ export const BlogService = {
       const data = (firstDoc.data() ?? {}) as Record<string, unknown>;
       return toBlog(firstDoc.id, data);
     } catch (error) {
-      console.error(`getBlogById: Error fetching blog by ID field (${id}):`, error);
+      console.error(
+        `getBlogById: Error fetching blog by ID field (${id}):`,
+        error
+      );
       return undefined;
     }
   },
-
-
 
   /**
    * Resolve a blog by either Firestore document id (preferred) or by slug.
@@ -147,7 +234,22 @@ export const BlogService = {
   async getBlogByIdentifier(identifier: string): Promise<Blog | undefined> {
     const cleanId = identifier;
 
-    // 1. Try by Document ID
+    // 1. Try by Firestore Document ID (fast path)
+    try {
+      const ref = doc(db, "blogs", cleanId);
+      const snap = await getDoc(ref);
+      if (snap.exists()) {
+        return toBlog(snap.id, (snap.data() ?? {}) as Record<string, unknown>);
+      }
+    } catch (e) {
+      // Keep going; we'll try query fallback.
+      console.warn(
+        "getBlogByIdentifier: getDoc failed, falling back to query:",
+        e
+      );
+    }
+
+    // 2. Try by Document ID field (legacy)
     const byDocId = await this.getBlogById(cleanId);
     if (byDocId) {
       return byDocId;

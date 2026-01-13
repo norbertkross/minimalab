@@ -1,8 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import Header from "../../components/header";
-import GetQuotes from "../../components/reuseable/get_quotes";
 import { useState } from "react";
-import { X } from "lucide-react"; 
+import { X } from "lucide-react";
 import Footer from "../../components/footer";
 
 interface JobOpening {
@@ -102,11 +101,11 @@ const Careers = () => {
         <div className="mb-24 p-1"></div>
         <div className="mx-auto mb-24 w-full px-4 md:w-7/12">
           <h2 className="mb-8 text-center text-2xl font-semibold">Current Openings</h2>
-          
+
           <div className="flex flex-col items-center space-y-6">
             {jobOpenings.length > 0 ? (
               jobOpenings.map((job) => (
-                <motion.div 
+                <motion.div
                   key={job.id}
                   whileHover={{ y: -2 }}
                   whileTap={{ scale: 0.98 }}
@@ -117,10 +116,10 @@ const Careers = () => {
                     <h3 className="text-xl font-bold text-gray-800">{job.title}</h3>
                     <div className="flex items-center space-x-4 text-gray-600">
                       <span>{job.type}</span>
-                      
+
                       <span>{job.location}</span>
                     </div>
-                   
+
                   </div>
                 </motion.div>
               ))
@@ -160,7 +159,7 @@ const Careers = () => {
                       <h2 className="text-3xl font-bold">{selectedJob.title}</h2>
                       <div className="mt-2 flex items-center space-x-4 text-gray-600">
                         <span>{selectedJob.type}</span>
-                        
+
                         <span>{selectedJob.location}</span>
                       </div>
                     </div>
@@ -205,7 +204,6 @@ const Careers = () => {
         </AnimatePresence>
       </main>
       <Footer/>
-      <GetQuotes />
     </>
   );
 };

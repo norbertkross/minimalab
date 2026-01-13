@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import AppHeader from '../../components/header';
 import Footer from '../../components/footer';
+import BlogEngagementRow from '../../components/BlogEngagementRow';
+import RecommendedBlogs from './RecommendedBlogs';
+import NewsletterModal from '../../components/NewsletterModal';
 import { BlogService } from '../../expose_db';
 import { Blog } from './types';
 import ReactMarkdown from 'react-markdown';
@@ -14,6 +17,7 @@ const BlogPage = () => {
   const [blog, setBlog] = useState<Blog | undefined>(undefined);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [showNewsletterModal, setShowNewsletterModal] = useState<boolean>(false);
 
   useEffect(() => {
     if (!id) {
@@ -108,13 +112,18 @@ const BlogPage = () => {
       <AppHeader />
       <main className="mx-auto max-w-4xl px-4 py-12 pt-32 sm:px-6 lg:px-8">
         <article>
-          <header className="mb-12 text-center">
+          <header className="mb-4 text-center">
             <p className="mb-2 text-gray-500">{blog.createdAt}</p>
             <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 md:text-5xl">
               {blog.title || "Blog Post"}
             </h1>
             <h2 className="mb-2 text-gray-500">Author: {blog.author}</h2>
           </header>
+          <BlogEngagementRow
+            blogId={blog.id}
+            initialViewCount={blog.view_count || 0}
+            initialClapCount={blog.clap_count || 0}
+          />
           {blog.image_url ? (
             <img src={blog.image_url} alt="Blog" className="mb-12 h-auto w-full rounded-lg object-cover shadow-lg" style={{maxHeight: '500px'}}/>
           ) : (
@@ -131,8 +140,24 @@ const BlogPage = () => {
             </ReactMarkdown>
           </div>
         </article>
+
+        {/* Newsletter Subscribe Button */}
+        <div className="mt-12 flex justify-center">
+          <button
+            onClick={() => setShowNewsletterModal(true)}
+            className="rounded-full bg-black px-8 py-3 font-semibold text-white transition-colors hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
+          >
+            Subscribe to Newsletter
+          </button>
+        </div>
+
+        <RecommendedBlogs excludeBlogId={blog.id} />
       </main>
       <Footer />
+      <NewsletterModal
+        isOpen={showNewsletterModal}
+        onClose={() => setShowNewsletterModal(false)}
+      />
     </>
   );
 };

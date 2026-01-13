@@ -1,22 +1,27 @@
-FROM node:22-alpine
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-# Install system dependencies needed for git-based deps and native modules (e.g., sharp)
-RUN apk add --no-cache git python3 make g++ libc6-compat
+# Install build tooling (needed for native modules and TypeScript builds)
+RUN apk add --no-cache python3 make g++ libc6-compat
 
-COPY package*.json .
-
-# Install dependencies
+COPY package*.json ./
 RUN npm ci
 
 COPY . .
-
-# Build Next.js app
 RUN npm run build
 
-# Expose app port (web service uses this)
-EXPOSE 4001
+FROM node:22-alpine AS runner
 
-# Default command (docker-compose overrides for web/worker services)
-CMD ["npm", "run", "start"]
+WORKDIR /app
+ENV NODE_ENV=production
+
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+# Copy runtime artifacts
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/server-dist ./server-dist
+
+EXPOSE 4001
+CMD ["node", "server-dist/index.js"]

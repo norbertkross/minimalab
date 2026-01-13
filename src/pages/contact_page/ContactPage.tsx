@@ -1,10 +1,11 @@
 import { useState, useCallback } from 'react'
 import Header from '../../components/header'
 import Footer from '../../components/footer'
-import Circle from '../../components/reuseable/gradient_cirle'
+import CircleComponent from '../../components/reuseable/gradient_cirle'
 import SelectService from './select_service'
 import Form from './form'
 import { UserService } from '../../expose_db'
+import { Home } from 'lucide-react'
 
 interface FormData {
   email: string;
@@ -70,7 +71,7 @@ export default function NewContact() {
     <>
       <Header/>
       <div className="relative flex min-h-screen flex-col items-center bg-white p-6">
-        <Circle/>
+        <CircleComponent children={<Home size={26} className='text-white'/>}/>
 
         {step === 1 && (
           <div>

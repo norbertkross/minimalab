@@ -12,10 +12,13 @@ const Footer = () => {
         <Link to="/" className='text-3xl'><FaYoutube/></Link>
       </div>
 
-      <div className='mb-14 flex flex-col gap-4 p-6 text-center text-[18px]'>
-      <div className='flex flex-col md:flex-row md:gap-6 justify-center items-center gap-2'>
+      <div className='mb-14 flex flex-col gap-4 px-6 text-center text-[18px]'>
+      <div className='flex flex-col md:flex-row md:gap-6 justify-center items-center gap-2 mt-0'>
          <Link to='/careers' className=''>Careers</Link>
+<<<<<<< HEAD
          <p>cscodelabs@gmail.com</p> 
+=======
+>>>>>>> 1ad29320363c41612519b27b008017beede2888d
         </div>
         <p>All rights reserved. Sailnex &copy; {new Date().getFullYear()}</p>
       </div>

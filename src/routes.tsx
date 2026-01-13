@@ -8,6 +8,7 @@ import Careers from './pages/careers_page/careers'
 import Blogs from './pages/blogs/blogs'
 
 import BlogPage from './pages/blogs/BlogPage'
+import CreateBlogPage from './pages/create_blog/create_blog'
 
 
 
@@ -20,9 +21,10 @@ const AppRoutes = () => {
     <Route path='/careers' element={<Careers/>}/>
 
     <Route path='/works' element={<Works/>}/>
-    <Route path='/get_quote' element={<NewContact/>}/>
+    <Route path='/get-quote' element={<NewContact/>}/>
     <Route path='/blogs' element ={<Blogs/>}/>
     <Route path='/blogs/:id' element={<BlogPage />} />
+    <Route path='/blogs/admin/create' element={<CreateBlogPage />} />
 
     </Routes>
   )
